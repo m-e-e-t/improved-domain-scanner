@@ -16,7 +16,7 @@
 
 ![Domain Scanner Pro](./generated-icon.png)
 
-### Enterprise-Grade Domain Analysis & Security Assessment Platform
+### Domain Analysis & Security Assessment Platform
 
 • [Documentation] • [API Reference] • [Report Bug](https://github.com/m-e-e-t/improved-domain-scanner/issues) • [Request Feature](https://github.com/m-e-e-t/improved-domain-scanner/issues)
 
