@@ -18,7 +18,7 @@
 
 ### Enterprise-Grade Domain Analysis & Security Assessment Platform
 
-• [Documentation] • [API Reference] • [Report Bug](https://github.com/m-e-e-t/domain-scanner/issues) • [Request Feature](https://github.com/m-e-e-t/domain-scanner/issues)
+• [Documentation] • [API Reference] • [Report Bug](https://github.com/m-e-e-t/improved-domain-scanner/issues) • [Request Feature](https://github.com/m-e-e-t/improved-domain-scanner/issues)
 
 
 </div>
