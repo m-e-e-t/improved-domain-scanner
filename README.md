@@ -36,7 +36,6 @@
 - [Quick Start](#-quick-start)
 - [Architecture](#-architecture)
 - [Security](#-security)
-- [Support](#-support)
 - [License](#-license)
 
 </details>
