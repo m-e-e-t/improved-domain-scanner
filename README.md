@@ -285,6 +285,6 @@ Licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 **[⬆ Back to Top](#-domain-scanner-pro-enterprise-edition)**
 
-*Built with ❤️ by the Meet Patankar*
+*Built with ❤️ by Meet Patankar*
 
 </div>
