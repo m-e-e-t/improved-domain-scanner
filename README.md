@@ -264,7 +264,7 @@ scan:alert      // Security alerts
 
 ## 📄 License
 
-Copyright © 2024 Domain Scanner Pro
+Copyright © 2025 Meet Patankar
 
 Licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
