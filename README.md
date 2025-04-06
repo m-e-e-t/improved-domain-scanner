@@ -250,13 +250,13 @@ scan:alert      // Security alerts
 
 ## 🗺 Product Roadmap
 
-### Q1 2024
+### Q1 2025
 - [ ] AI-powered vulnerability prediction
 - [ ] Advanced threat intelligence integration
 - [ ] Custom scanning rule engine
 - [ ] Enhanced compliance reporting
 
-### Q2 2024
+### Q2 2025
 - [ ] Blockchain-based scan verification
 - [ ] Zero-trust architecture implementation
 - [ ] Advanced API management portal
