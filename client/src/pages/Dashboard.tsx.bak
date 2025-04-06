@@ -1,0 +1,460 @@
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowUpRight, Shield, Globe, Cpu, Server, AlertTriangle, Check, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+  PieChart,
+  Pie,
+  Legend
+} from 'recharts';
+import { DomainScan } from '@shared/schema';
+import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+
+// Color palette for charts
+const colors = {
+  primary: '#3b82f6',
+  secondary: '#10b981',
+  tertiary: '#f59e0b',
+  danger: '#ef4444',
+  safe: '#22c55e',
+  warning: '#f97316'
+};
+
+export default function Dashboard() {
+  const { toast } = useToast();
+  const [summaryStats, setSummaryStats] = useState({
+    totalScans: 0,
+    domainCount: 0,
+    avgVulnerabilities: 0,
+    securityScore: 0
+  });
+  
+  // Query recent scans for dashboard data
+  const { data: recentScans, isLoading, error } = useQuery({
+    queryKey: ['/api/scans/recent'],
+    queryFn: async () => {
+      const response = await fetch('/api/scans/recent');
+      if (!response.ok) throw new Error('Failed to fetch recent scans');
+      return response.json() as Promise<DomainScan[]>;
+    },
+  });
+
+  // Calculate summary statistics when we get scan data
+  useEffect(() => {
+    if (recentScans && recentScans.length > 0) {
+      const uniqueDomains = new Set(recentScans.map(scan => scan.domain));
+      
+      // Calculate average vulnerabilities and security score
+      let totalVulns = 0;
+      let totalScore = 0;
+      let scoreCount = 0;
+      
+      recentScans.forEach(scan => {
+        try {
+          const results = JSON.parse(scan.results as string);
+          
+          // Count vulnerabilities if security scan was done
+          if (results.security && results.security.vulnerabilities) {
+            totalVulns += results.security.vulnerabilities.length;
+          }
+          
+          // Add security score if available
+          if (results.security && typeof results.security.score === 'number') {
+            totalScore += results.security.score;
+            scoreCount++;
+          }
+        } catch (e) {
+          // Skip malformed results
+        }
+      });
+      
+      setSummaryStats({
+        totalScans: recentScans.length,
+        domainCount: uniqueDomains.size,
+        avgVulnerabilities: totalVulns / recentScans.length,
+        securityScore: scoreCount > 0 ? totalScore / scoreCount : 0
+      });
+    }
+  }, [recentScans]);
+
+  // Generate data for visualization charts
+  const getVulnerabilitySeverityData = () => {
+    const severityCounts = { low: 0, medium: 0, high: 0, critical: 0 };
+    
+    if (recentScans) {
+      recentScans.forEach(scan => {
+        try {
+          const results = JSON.parse(scan.results as string);
+          if (results.security && results.security.vulnerabilities) {
+            results.security.vulnerabilities.forEach((vuln: any) => {
+              if (vuln.severity) {
+                severityCounts[vuln.severity as keyof typeof severityCounts]++;
+              }
+            });
+          }
+        } catch (e) {
+          // Skip malformed results
+        }
+      });
+    }
+    
+    return [
+      { name: 'Low', value: severityCounts.low, color: colors.safe },
+      { name: 'Medium', value: severityCounts.medium, color: colors.warning },
+      { name: 'High', value: severityCounts.high, color: colors.tertiary },
+      { name: 'Critical', value: severityCounts.critical, color: colors.danger }
+    ];
+  };
+  
+  const getTechnologyData = () => {
+    const techCategories: Record<string, number> = {};
+    
+    if (recentScans) {
+      recentScans.forEach(scan => {
+        try {
+          const results = JSON.parse(scan.results as string);
+          if (results.technologies && Array.isArray(results.technologies)) {
+            results.technologies.forEach((tech: any) => {
+              if (tech.category) {
+                techCategories[tech.category] = (techCategories[tech.category] || 0) + 1;
+              }
+            });
+          }
+        } catch (e) {
+          // Skip malformed results
+        }
+      });
+    }
+    
+    return Object.entries(techCategories)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  };
+  
+  const getSecurityTrendData = () => {
+    const data: { date: string; score: number }[] = [];
+    
+    if (recentScans) {
+      // Sort scans by date
+      const sortedScans = [...recentScans].sort((a, b) => 
+        new Date(a.scannedAt).getTime() - new Date(b.scannedAt).getTime()
+      );
+      
+      // Get the last 10 scans for the trend
+      const recentSortedScans = sortedScans.slice(-10);
+      
+      recentSortedScans.forEach(scan => {
+        try {
+          const results = JSON.parse(scan.results as string);
+          if (results.security && typeof results.security.score === 'number') {
+            const date = new Date(scan.scannedAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric'
+            });
+            
+            data.push({
+              date,
+              score: results.security.score
+            });
+          }
+        } catch (e) {
+          // Skip malformed results
+        }
+      });
+    }
+    
+    return data;
+  };
+
+  // Handle loading and error states
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-slate-200 rounded w-1/4"></div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-slate-200 rounded"></div>
+            ))}
+          </div>
+          <div className="h-80 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    toast({
+      title: 'Error loading dashboard',
+      description: error instanceof Error ? error.message : 'Failed to load dashboard data',
+      variant: 'destructive',
+    });
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Security analytics and domain scan insights</p>
+        </div>
+        <Link href="/">
+          <Button className="flex items-center gap-2">
+            <Search size={16} />
+            New Scan
+          </Button>
+        </Link>
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        {/* Total Scans Card */}
+        <Card key="total-scans" className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total Scans</CardTitle>
+            <Globe className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summaryStats.totalScans}</div>
+            <p className="text-xs text-muted-foreground">
+              {summaryStats.domainCount} unique domains
+            </p>
+          </CardContent>
+        </Card>
+        
+        {/* Security Score Card */}
+        <Card key="security-score" className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Avg. Security Score</CardTitle>
+            <Shield className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summaryStats.securityScore.toFixed(1)}/100
+            </div>
+            <div className="w-full h-2 bg-slate-200 rounded-full mt-2">
+              <div 
+                className="h-full rounded-full" 
+                style={{ 
+                  width: `${summaryStats.securityScore}%`,
+                  backgroundColor: summaryStats.securityScore > 70 
+                    ? colors.safe 
+                    : summaryStats.securityScore > 40 
+                      ? colors.tertiary 
+                      : colors.danger
+                }}
+              ></div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Vulnerabilities Card */}
+        <Card key="vulnerabilities" className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Avg. Vulnerabilities</CardTitle>
+            <AlertTriangle className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summaryStats.avgVulnerabilities.toFixed(1)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Per scanned domain
+            </p>
+          </CardContent>
+        </Card>
+        
+        {/* Common Technologies Card */}
+        <Card key="common-tech" className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Most Common Tech</CardTitle>
+            <Cpu className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {getTechnologyData()[0]?.name || 'N/A'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Found in {getTechnologyData()[0]?.value || 0} scans
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+        {/* Security Score Trend */}
+        <Card key="security-trend" className="col-span-2">
+          <CardHeader>
+            <CardTitle>Security Score Trend</CardTitle>
+            <CardDescription>Average security score over time</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={getSecurityTrendData()} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis domain={[0, 100]} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke={colors.primary}
+                  activeDot={{ r: 8 }}
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        
+        {/* Vulnerability Severity */}
+        <Card key="vulnerability-severity">
+          <CardHeader>
+            <CardTitle>Vulnerability Severity</CardTitle>
+            <CardDescription>Distribution by severity level</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={getVulnerabilitySeverityData()}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {getVulnerabilitySeverityData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+        {/* Technology Categories */}
+        <Card key="technology-categories">
+          <CardHeader>
+            <CardTitle>Technology Categories</CardTitle>
+            <CardDescription>Most common technology categories</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={getTechnologyData()} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" />
+                <Tooltip />
+                <Bar dataKey="value" fill={colors.primary} radius={[0, 4, 4, 0]}>
+                  {getTechnologyData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={colors.primary} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        
+        {/* Recent Scan Summary */}
+        <Card key="recent-scan-summary">
+          <CardHeader>
+            <CardTitle>Recent Scan Summary</CardTitle>
+            <CardDescription>Overview of recent domain scans</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentScans?.slice(0, 5).map((scan) => {
+                // Parse scan results to show security score
+                let securityScore;
+                try {
+                  const results = JSON.parse(scan.results as string);
+                  securityScore = results.security?.score;
+                } catch (e) {
+                  securityScore = null;
+                }
+                
+                return (
+                  <Link 
+                    href={`/?domain=${encodeURIComponent(scan.domain)}&view=results`}
+                    key={scan.id}
+                    className="block"
+                  >
+                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 hover:border-primary/50 transition-colors cursor-pointer">
+                      <div className="flex items-center">
+                        <div className="mr-3">
+                          {securityScore !== null && securityScore !== undefined ? (
+                            <div 
+                              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                securityScore > 70 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : securityScore > 40 
+                                    ? 'bg-orange-100 text-orange-700' 
+                                    : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {securityScore >= 70 ? (
+                                <Check className="h-5 w-5" />
+                              ) : (
+                                <AlertTriangle className="h-5 w-5" />
+                              )}
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                              <Globe className="h-5 w-5 text-slate-500" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium">{scan.domain}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(scan.scannedAt).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        {securityScore !== null && securityScore !== undefined && (
+                          <div 
+                            className={`mr-4 font-semibold ${
+                              securityScore > 70 
+                                ? 'text-green-600' 
+                                : securityScore > 40 
+                                  ? 'text-orange-600' 
+                                  : 'text-red-600'
+                            }`}
+                          >
+                            {securityScore}/100
+                          </div>
+                        )}
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

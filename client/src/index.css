@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-slate-100 text-foreground;
+  }
+}
+
+@keyframes rotate-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes reverse-rotate-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+@layer utilities {
+  .animate-bounce-slow {
+    animation: bounce 3s infinite;
+  }
+  
+  .animate-wiggle {
+    animation: wiggle 2s ease-in-out infinite;
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@layer components {
+  .text-success {
+    @apply text-green-600;
+  }
+  
+  .bg-success {
+    @apply bg-green-600;
+  }
+  
+  .text-warning {
+    @apply text-yellow-600;
+  }
+  
+  .bg-warning {
+    @apply bg-yellow-600;
+  }
+  
+  .text-destructive {
+    @apply text-red-600;
+  }
+  
+  .bg-destructive {
+    @apply bg-red-600;
+  }
+  
+  .text-info {
+    @apply text-purple-600;
+  }
+  
+  .bg-info {
+    @apply bg-purple-600;
+  }
+}
+
+.badge-dns {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-aaaa {
+  @apply bg-purple-100 text-purple-800;
+}
+
+.badge-mx {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-txt {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.badge-ns {
+  @apply bg-indigo-100 text-indigo-800;
+}
+
+.badge-cname {
+  @apply bg-pink-100 text-pink-800;
+}
+
+.badge-implemented {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-missing {
+  @apply bg-red-100 text-red-800;
+}
+
+.scan-icon-wrapper {
+  @apply flex-shrink-0 p-2 rounded-full;
+}
+
+.scan-icon-dns {
+  @apply bg-blue-100;
+}
+
+.scan-icon-ssl {
+  @apply bg-green-100;
+}
+
+.scan-icon-whois {
+  @apply bg-purple-100;
+}
+
+.scan-icon-headers {
+  @apply bg-orange-100;
+}
+
+.scan-icon {
+  @apply h-6 w-6;
+}
+
+.scan-icon-dns {
+  @apply text-primary;
+}
+
+.scan-icon-ssl {
+  @apply text-green-600;
+}
+
+.scan-icon-whois {
+  @apply text-purple-600;
+}
+
+.scan-icon-headers {
+  @apply text-orange-500;
+}
